@@ -70,10 +70,6 @@ int main (int argc, char *argv[])
     surface = cairo_pdf_surface_create (output_filename, width, height);
     cr = cairo_create (surface);
 
-    /* Clear background */
-    cairo_set_source_rgb (cr, 1.0, 1.0, 1.0); /* white */
-    cairo_paint (cr);
-
     rsvg_handle_render_cairo (handle, cr);
 
     status = cairo_status (cr);
