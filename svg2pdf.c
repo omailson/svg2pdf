@@ -1,4 +1,5 @@
-/*
+/* gcc `pkg-config --cflags --libs librsvg-2.0 cairo-pdf` -o svg2pdf svg2pdf.c
+ *
  * Copyright © 2005 Red Hat, Inc.
  * Copyright © 2006 Red Hat, Inc.
  * Copyright © 2007 Red Hat, Inc.
