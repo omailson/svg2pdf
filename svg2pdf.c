@@ -58,7 +58,7 @@ int main (int argc, char *argv[])
 
     g_type_init ();
 
-    rsvg_set_default_dpi (72.0);
+    rsvg_set_default_dpi (0.0);
     handle = rsvg_handle_new_from_file (filename, &error);
     if (error != NULL)
 	FAIL (error->message);
