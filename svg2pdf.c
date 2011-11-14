@@ -50,6 +50,8 @@ cairo_status_t
 stream_cairo_write (void *closure, const unsigned char *data, unsigned int length)
 {
 	FILE *bufferout = closure;
+	if (bufferout == NULL)
+	FAIL ("");
 	fwrite(data, 1, length, bufferout);
 
 	return CAIRO_STATUS_SUCCESS;
@@ -83,6 +85,8 @@ svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content
     height = dim.height;
 
 	fptmp = tmpfile();
+	if (fptmp == NULL)
+	FAIL ("Unable to create temporary file");
 	surface = cairo_pdf_surface_create_for_stream(stream_cairo_write, fptmp, width, height);
     cr = cairo_create (surface);
 
@@ -99,6 +103,8 @@ svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content
 	pdf_size = ftell(fptmp);
 	rewind(fptmp);
 	(*pdf_content) = (char*) malloc(sizeof(char)*pdf_size);
+	if ((*pdf_content) == NULL)
+	FAIL ("");
 	fread(*pdf_content, 1, pdf_size, fptmp);
 	fclose(fptmp);
 
@@ -121,15 +127,21 @@ int main (int argc, char *argv[])
 	FAIL ("usage: svg2pdf input_file.svg output_file.pdf");
 
 	fp = fopen(filename, "r");
+	if (fp == NULL)
+	FAIL ("Couldn't open input file");
 	fseek(fp, 0, SEEK_END);
 	lSize = ftell(fp);
 	rewind(fp);
 	buffer = (unsigned char *) malloc(sizeof(unsigned char)*lSize);
+	if (buffer == NULL)
+	FAIL ("");
 	fread(buffer, 1, lSize, fp);
 
 	outSize = svg_to_pdf(buffer, lSize, &bufferout);
 
 	fpout = fopen(output_filename, "wb");
+	if (fpout == NULL)
+	FAIL ("Unable to save file.");
 	fwrite(bufferout, 1, outSize, fpout);
 
 	fclose(fp);
