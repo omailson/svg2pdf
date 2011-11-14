@@ -41,25 +41,40 @@
 
 #define PIXELS_PER_POINT 1
 
-int main (int argc, char *argv[])
+cairo_status_t stream_cairo_write(void *closure, const unsigned char*data, unsigned int length);
+
+long
+svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdfcontent);
+
+cairo_status_t
+stream_cairo_write (void *closure, const unsigned char *data, unsigned int length)
+{
+	FILE *bufferout = closure;
+	fwrite(data, 1, length, bufferout);
+
+	return CAIRO_STATUS_SUCCESS;
+}
+
+long
+svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content)
 {
     GError *error = NULL;
     RsvgHandle *handle;
     RsvgDimensionData dim;
     double width, height;
-    const char *filename = argv[1];
-    const char *output_filename = argv[2];
     cairo_surface_t *surface;
     cairo_t *cr;
     cairo_status_t status;
 
-    if (argc != 3)
-	FAIL ("usage: svg2pdf input_file.svg output_file.pdf");
+	FILE *fptmp;
+	long pdf_size;
 
     g_type_init ();
 
     rsvg_set_default_dpi (0.0);
-    handle = rsvg_handle_new_from_file (filename, &error);
+
+	handle = rsvg_handle_new_from_data(svg_content, svg_length, &error);
+
     if (error != NULL)
 	FAIL (error->message);
 
@@ -67,7 +82,8 @@ int main (int argc, char *argv[])
     width = dim.width;
     height = dim.height;
 
-    surface = cairo_pdf_surface_create (output_filename, width, height);
+	fptmp = tmpfile();
+	surface = cairo_pdf_surface_create_for_stream(stream_cairo_write, fptmp, width, height);
     cr = cairo_create (surface);
 
     rsvg_handle_render_cairo (handle, cr);
@@ -78,6 +94,48 @@ int main (int argc, char *argv[])
 
     cairo_destroy (cr);
     cairo_surface_destroy (surface);
+
+	fseek(fptmp, 0, SEEK_END);
+	pdf_size = ftell(fptmp);
+	rewind(fptmp);
+	(*pdf_content) = (char*) malloc(sizeof(char)*pdf_size);
+	fread(*pdf_content, 1, pdf_size, fptmp);
+	fclose(fptmp);
+
+	return pdf_size;
+}
+
+int main (int argc, char *argv[])
+{
+    const char *filename = argv[1];
+    const char *output_filename = argv[2];
+
+	FILE *fp;
+	long lSize;
+	unsigned char *buffer;
+	char *bufferout;
+	long outSize;
+	FILE *fpout;
+
+    if (argc != 3)
+	FAIL ("usage: svg2pdf input_file.svg output_file.pdf");
+
+	fp = fopen(filename, "r");
+	fseek(fp, 0, SEEK_END);
+	lSize = ftell(fp);
+	rewind(fp);
+	buffer = (unsigned char *) malloc(sizeof(unsigned char)*lSize);
+	fread(buffer, 1, lSize, fp);
+
+	outSize = svg_to_pdf(buffer, lSize, &bufferout);
+
+	fpout = fopen(output_filename, "wb");
+	fwrite(bufferout, 1, outSize, fpout);
+
+	fclose(fp);
+	fclose(fpout);
+	free(bufferout);
+	free(buffer);
 
     return 0;
 }
