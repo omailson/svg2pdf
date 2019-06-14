@@ -25,8 +25,8 @@
  * SOFTWARE.
  *
  * Authors: Kristian Høgsberg <krh@redhat.com>
- *	    Carl Worth <cworth@redhat.com>
- *	    Behdad Esfahbod <besfahbo@redhat.com>
+ *      Carl Worth <cworth@redhat.com>
+ *      Behdad Esfahbod <besfahbo@redhat.com>
  */
 
 #include <stdio.h>
@@ -44,7 +44,7 @@
 cairo_status_t stream_cairo_write(void *closure, const unsigned char*data, unsigned int length);
 
 long
-svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdfcontent);
+svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdfcontent, double dpi);
 
 cairo_status_t
 stream_cairo_write (void *closure, const unsigned char *data, unsigned int length)
@@ -58,7 +58,7 @@ stream_cairo_write (void *closure, const unsigned char *data, unsigned int lengt
 }
 
 long
-svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content)
+svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content, double dpi)
 {
     GError *error = NULL;
     RsvgHandle *handle;
@@ -73,7 +73,7 @@ svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content
 
     g_type_init ();
 
-    rsvg_set_default_dpi (0.0);
+    rsvg_set_default_dpi (dpi);
 
     handle = rsvg_handle_new_from_data(svg_content, svg_length, &error);
 
@@ -113,9 +113,6 @@ svg_to_pdf(const unsigned char* svg_content, long svg_length, char **pdf_content
 
 int main (int argc, char *argv[])
 {
-    const char *filename = argv[1];
-    const char *output_filename = argv[2];
-
     FILE *fp;
     long lSize;
     unsigned char *buffer;
@@ -123,8 +120,13 @@ int main (int argc, char *argv[])
     long outSize;
     FILE *fpout;
 
-    if (argc != 3)
-    FAIL ("usage: svg2pdf input_file.svg output_file.pdf");
+    if ((argc < 3) | (argc > 4))
+    FAIL ("usage: svg2pdf input_file.svg output_file.pdf [dpi]");
+
+    const char *filename = argv[1];
+    const char *output_filename = argv[2];
+    double dpi = 0.0;
+    if (argc > 3) dpi = atof(argv[3]);
 
     fp = fopen(filename, "r");
     if (fp == NULL)
@@ -137,7 +139,7 @@ int main (int argc, char *argv[])
     FAIL ("");
     fread(buffer, 1, lSize, fp);
 
-    outSize = svg_to_pdf(buffer, lSize, &bufferout);
+    outSize = svg_to_pdf(buffer, lSize, &bufferout, dpi);
 
     fpout = fopen(output_filename, "wb");
     if (fpout == NULL)
